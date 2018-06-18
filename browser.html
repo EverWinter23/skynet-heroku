@@ -1,43 +1,48 @@
-<!DOCTYPE <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>s3 Browser</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" media="screen" href="css/browser.css" />
-    <script src="js/browser.js"></script>
+        
+    <!-- amazon web services -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.259.1.min.js"></script>
+    <!-- jquery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- don't forget to be awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <!-- fonts please -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">     
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.207.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+    
+    <!-- custom stylesheets -->
+    <link rel="stylesheet" href="css/browser.css">
+    <!-- custom scripts -->
+    <script src="js/browser.js"></script> 
+    
 </head>
 
-<!-- stylesheets -->
-<link rel="stylesheet" href="css/browser.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"></link>
-
-<!-- custom scripts -->
-<script src="js/browser.js"></script> 
-<!-- amazon web services -->
-<script src="https://sdk.amazonaws.com/js/aws-sdk-2.259.1.min.js"></script>
-<!-- jquery -->
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<!-- don't forget to be awesome -->
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
-    
 <body>
-
     <div class="ui upload-drop">  
-            <aside class="ui__sidebar">
-                <ul class="file-tree">
+        <aside class="ui__sidebar">
+            <!-- fix scroll bar somewhere over here -->
+            <ul class="file-tree">
                     <li class="file-tree__item">
-                    </li>
-    
-                    <li class="file-tree__item file-tree__item--open">
-                    </li>
-    
-                </ul>
-                <!-- /.file-subtree -->
+                            <div class="folder">Project XYS</div>
+                        </li>
                         
-            </aside>
-            <!-- /.sidebar -->
+            </ul>
+            <!-- /.file-subtree -->
+                    
+        </aside>
+        <!-- /.sidebar -->
         
         <main class="ui__main">
             <div class="ui__menu">
@@ -57,10 +62,9 @@
 
             <table class="file-list" id="file-table">     
                 <tr class="file-list__header">
-                        <th onClick="sortTable(0)">Name <i class="fa fa-long-arrow-down"></i></th>
+                        <th onClick="sortTable(0)">Name</th>
                         <th onClick="sortTable(1)">Type</th>
                         <th onClick="sortTable(2, '123')">Size</th>
-                        <th>Tags</th>
                 </tr> 
             </table>
             <!-- /.file-list -->
@@ -70,6 +74,19 @@
 
     </div>
     <!-- /.ui -->
+    <div class="ui__overlay overlay" id="help">
+        <div class="overlay__inner">
+            
+            <h2>🎂</h2>
+            <p>The cake is a lie...</p>
+            
+            <a href="javascript:void(0)" class="btn overlay__close">Oh no!</a>
+            
+        </div>
+        <!-- /.overlay__inner -->
+    </div>
+    <!-- /.overlay -->
     
+
 </body>
 </html>
