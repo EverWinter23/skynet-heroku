@@ -183,9 +183,11 @@ $(document).ready(function() {
             //Prefix: config.Prefix,
             //Delimiter: config.Delimiter 
             Bucket: 'skynet23',
-            Delimiter: '',
+            Delimiter: '/',
             Prefix: '' 
         };
+        s3 = new AWS.S3(params);
+            
 
         var scope = {
             Contents: [],
@@ -264,26 +266,115 @@ $(document).ready(function() {
 
     function s3draw(data, complete) {
         folder2breadcrumbs(data);
-
+        console.log("ahhhhhhhhhhhhhhhhhhhhhhhh", data)
         // Add each part of current path (S3 bucket plus folder hierarchy) into the breadcrumbs
         $.each(data.CommonPrefixes, function(i, prefix) {
-            $('.').DataTable().rows.add([{
-                Key: prefix.Prefix
-            }]);
+            $(".file-tree").append(
+                '<li class="file-tree__item">'
+                + '<div class="folder">'
+                + prefix.Prefix
+                + '</div>'
+                + '</li>'
+            )
         });
 
         // Add S3 objects to DataTable
-        $('.').DataTable().rows.add(data.Contents).draw();
+        //$('.').DataTable().rows.add(data.Contents).draw();
     }
 
     var counter = 0;
     //(s3exp_lister = s3list(s3draw)).go();
+    /*
     $(".file-tree").append(
         '<li class="file-tree__item">'
         + '<div class="folder">'
         + "Watcha"
         + '</div>'
         + '</li>'
-    )
+    )*/
+    (s3exp_lister = s3list(s3draw)).go()
+
+    function folder2breadcrumbs(data) {
+        console.log('Bucket: ' + data.params.Bucket);
+        console.log('Prefix: ' + data.params.Prefix);
+
+        if (data.params.Prefix && data.params.Prefix.length > 0) {
+            console.log('Set hash: ' + data.params.Prefix);
+            window.location.hash = data.params.Prefix;
+        } else {
+            console.log('Remove hash');
+            removeHash();
+        }
+
+        // The parts array will contain the bucket name followed by all the
+        // segments of the prefix, exploded out as separate strings.
+        var parts = [data.params.Bucket];
+
+        if (data.params.Prefix) {
+            parts.push.apply(parts,
+                data.params.Prefix.endsWith('/') ?
+                data.params.Prefix.slice(0, -1).split('/') :
+                data.params.Prefix.split('/'));
+        }
+
+        console.log('Parts: ' + parts + ' (length=' + parts.length + ')');
+
+        // Empty the current breadcrumb list
+        $('#breadcrumb li').remove();
+
+        // Now build the new breadcrumb list
+        var buildprefix = '';
+        $.each(parts, function(ii, part) {
+            var ipart;
+
+            // Add the bucket (the bucket is always first)
+            if (ii === 0) {
+                var a1 = $('<a>').attr('href', '#').text(part);
+                ipart = $('<li>').append(a1);
+                a1.click(function(e) {
+                    e.preventDefault();
+                    console.log('Breadcrumb click bucket: ' + data.params.Bucket);
+                    s3exp_config = {
+                        Bucket: data.params.Bucket,
+                        Prefix: '',
+                        Delimiter: data.params.Delimiter
+                    };
+                    (s3exp_lister = s3list(s3exp_config, s3draw)).go();
+                });
+                // Else add the folders within the bucket
+            } else {
+                buildprefix += part + '/';
+
+                if (ii == parts.length - 1) {
+                    ipart = $('<li>').addClass('active').text(part);
+                } else {
+                    var a2 = $('<a>').attr('href', '#').append(part);
+                    ipart = $('<li>').append(a2);
+
+                    // Closure needed to enclose the saved S3 prefix
+                    (function() {
+                        var saveprefix = buildprefix;
+                        // console.log('Part: ' + part + ' has buildprefix: ' + saveprefix);
+                        a2.click(function(e) {
+                            e.preventDefault();
+                            console.log('Breadcrumb click object prefix: ' + saveprefix);
+                            s3exp_config = {
+                                Bucket: data.params.Bucket,
+                                Prefix: saveprefix,
+                                Delimiter: data.params.Delimiter
+                            };
+                            (s3exp_lister = s3list(s3exp_config, s3draw)).go();
+                        });
+                    })();
+                }
+            }
+            $('#breadcrumb').append(ipart);
+        });
+    }
+
+    // Remove hash from document URL
+    function removeHash() {
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
 
 });
