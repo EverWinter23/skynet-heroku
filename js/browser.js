@@ -1,6 +1,13 @@
 // ref -> https://www.digitalocean.com/community/tutorials/an-introduction-to-jquery
 
 $(document).ready(function() {
+    var s3_config = {
+        Region: '',
+        Bucket: 'skynet23',
+        Prefix: '',
+        Delimiter: '/'
+    };
+
     var ui = $(".ui"),
         sidebar = $(".ui__sidebar"),
         main = $(".ui__main"),
@@ -51,12 +58,20 @@ $(document).ready(function() {
 
     // Please doc this change--IMPORTANT
     $(document).on("click", ".folder", function(e) {
+        e.preventDefault();
+            
         console.log("happenings...")
         var t = $(this);
         var tree = t.closest(".file-tree__item");
 
+        console.log("target text=" + t.text());
         console.log("target href=" + t.href);
         console.log("target dataset=" + JSON.stringify(t.dataset));
+        delete s3_config.Marker;
+        s3_config.Prefix = t.text() + "/";
+        s3_config.Delimiter = '/';
+        (s3exp_lister = s3list(s3_config, s3draw)).go();
+                
 
         if (t.hasClass("folder--open")) {
             t.removeClass("folder--open");
@@ -179,14 +194,13 @@ $(document).ready(function() {
     var s3exp_lister = null;
     
     // populate side-bar with folders
-    function s3list(completecb) {
+    function s3list(config, completecb) {
+        console.log('s3list hers something: ', config);
+        
         var params = {
-            //Bucket: config.Bucket,
-            //Prefix: config.Prefix,
-            //Delimiter: config.Delimiter 
-            Bucket: 'skynet23',
-            Delimiter: '/',
-            Prefix: '' 
+            Bucket: config.Bucket,
+            Prefix: config.Prefix,
+            Delimiter: config.Delimiter, 
         };
         s3 = new AWS.S3(params);
             
@@ -253,6 +267,7 @@ $(document).ready(function() {
             // Start the spinner, clear the table, make an S3 listObjects request
             go: function() {
                 scope.cb = this.cb;
+                $('#file-table').empty()
                 s3.makeUnauthenticatedRequest('listObjects', scope.params, this.cb);
             },
 
@@ -266,16 +281,19 @@ $(document).ready(function() {
         };
     }
 
-    function s3draw(data, complete) {
+    function s3draw(data) {
+        console.log("NOTE:", data)
         // Add each part of current path (S3 bucket plus folder hierarchy) into the breadcrumbs
         $.each(data.CommonPrefixes, function(i, folder) {
+            console.log('FODLER!!!!!!!!!!!!!!!!', )
             $(".file-tree").append(
-                '<li class="file-tree__item">'
+                '<li class="file-tree__item", id=folder' + i + '>'
                 + '<div class="folder">'
-                + '<a href ="' + object2hrefvirt('skynet23', folder.Prefix) +'">' + folder.Prefix.replace('/', '') + '</a>'
+                + '<a href ="' + object2hrefvirt('skynet23', folder.Prefix) +'">' + prefix2folder(folder.Prefix).replace('/', '') + '</a>'
                 + '</div>'
                 + '</li>'
             )
+            $("#folder"+i).attr('prefix', folder.Prefix)
             //folder2breadcrumbs(data.)
         });
 
@@ -286,10 +304,11 @@ $(document).ready(function() {
         
         //$('#file-list').DataTable().rows.add(data.Contents).draw();
         $.each(data.Contents, function(i, file) {
+            console.log('HER!!!!!!!!!!!!!!!!', file)
             $('#file-table').append(
-                'tr class="file-list__file">'
+                '<tr class="file-list__file">'
                 + '<td>'
-                + '<a href ="' + object2hrefvirt('skynet23', file.Key) + '">' + file.Key + '</a>'
+                + '<a href ="' + object2hrefvirt('skynet23', file.Key) + '">' + fullpath2filename(file.Key) + '</a>'
                 + '</td>'
                 + '<td> ' + file.LastModified + '</td>'
                 + '<td> ' + file.Size + '</td>'
@@ -308,7 +327,7 @@ $(document).ready(function() {
         + '</div>'
         + '</li>'
     )*/
-    (s3exp_lister = s3list(s3draw)).go()
+    (s3exp_lister = s3list(s3_config, s3draw)).go()
     function object2hrefvirt(bucket, object) {
         if (AWS.config.region === "us-east-1") {
             return document.location.protocol + '//' + bucket + '.s3.amazonaws.com/' + encodeURIComponent(object);
