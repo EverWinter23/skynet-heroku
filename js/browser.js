@@ -55,6 +55,9 @@ $(document).ready(function() {
         var t = $(this);
         var tree = t.closest(".file-tree__item");
 
+        console.log("target href=" + t.href);
+        console.log("target dataset=" + JSON.stringify(t.dataset));
+
         if (t.hasClass("folder--open")) {
             t.removeClass("folder--open");
             tree.removeClass("file-tree__item--open");
@@ -111,7 +114,6 @@ $(document).ready(function() {
         alert("It seems you dropped something!");
     }
 
-    // SORTING
     function sortTable(n, method) {
         var table,
             rows,
@@ -265,21 +267,33 @@ $(document).ready(function() {
     }
 
     function s3draw(data, complete) {
-        folder2breadcrumbs(data);
-        console.log("ahhhhhhhhhhhhhhhhhhhhhhhh", data)
         // Add each part of current path (S3 bucket plus folder hierarchy) into the breadcrumbs
         $.each(data.CommonPrefixes, function(i, prefix) {
             $(".file-tree").append(
                 '<li class="file-tree__item">'
                 + '<div class="folder">'
-                + prefix.Prefix
+                + prefix.Prefix.replace('/', '')
                 + '</div>'
                 + '</li>'
             )
+            //folder2breadcrumbs(data.)
         });
 
+        console.log(data.Contents)
+        console.log(data.Contents[0])
+        console.log(data.Contents[0].Key)
         // Add S3 objects to DataTable
-        //$('.').DataTable().rows.add(data.Contents).draw();
+        
+        //$('#file-list').DataTable().rows.add(data.Contents).draw();
+        $.each(data.Contents, function(i, prefix) {
+            $('#file-table').append(
+                'tr class="file-list__file">'
+                + '<td> ' + data.Contents[0].Key + '</td>'
+                + '<td> ' + data.Contents[0].LastModified + '</td>'
+                + '<td> ' + data.Contents[0].Size + '</td>'
+                + '</tr>'
+            )
+        });
     }
 
     var counter = 0;
@@ -293,6 +307,42 @@ $(document).ready(function() {
         + '</li>'
     )*/
     (s3exp_lister = s3list(s3draw)).go()
+    function object2hrefvirt(bucket, object) {
+        if (AWS.config.region === "us-east-1") {
+            return document.location.protocol + '//' + bucket + '.s3.amazonaws.com/' + encodeURIComponent(object);
+        } else {
+            return document.location.protocol + '//' + bucket + '.s3-' + AWS.config.region + '.amazonaws.com/' + encodeURIComponent(object);
+        }
+    }
+    
+    function isfolder(path) {
+        return path.endsWith('/');
+    }
+
+    // Convert cars/vw/golf.png to golf.png
+    function fullpath2filename(path) {
+        return path.replace(/^.*[\\\/]/, '');
+    }
+
+    // Convert cars/vw/golf.png to cars/vw
+    function fullpath2pathname(path) {
+        return path.substring(0, path.lastIndexOf('/'));
+    }
+
+    // Convert cars/vw/ to vw/
+    function prefix2folder(prefix) {
+        var parts = prefix.split('/');
+        return parts[parts.length - 2] + '/';
+    }
+
+    function object2hrefpath(bucket, object) {
+        console.log("THIS IS WHERE MAGIC HAPPEND")
+        if (AWS.config.region === "us-east-1") {
+            return document.location.protocol + "//s3.amazonaws.com/" + bucket + "/" + encodeURIComponent(object);
+        } else {
+            return document.location.protocol + "//s3-' + AWS.config.region + '.amazonaws.com/" + bucket + "/" + encodeURIComponent(object);
+        }
+    }
 
     function folder2breadcrumbs(data) {
         console.log('Bucket: ' + data.params.Bucket);
@@ -316,60 +366,23 @@ $(document).ready(function() {
                 data.params.Prefix.slice(0, -1).split('/') :
                 data.params.Prefix.split('/'));
         }
+    }
 
-        console.log('Parts: ' + parts + ' (length=' + parts.length + ')');
+    function renderObject(data, type, full) {
+        if (isthisdocument(s3exp_config.Bucket, data)) {
+            console.log("is this document: " + data);
+            return fullpath2filename(data);
+        } else if (isfolder(data)) {
+            console.log("is folder: " + data);
+            return '<a data-s3="folder" data-prefix="' + data + '" href="' + object2hrefvirt(s3exp_config.Bucket, data) + '">' + prefix2folder(data) + '</a>';
+        } else {
+            console.log("not folder/this document: " + data);
+            return '<a data-s3="object" href="' + object2hrefvirt(s3exp_config.Bucket, data) + '">' + fullpath2filename(data) + '</a>';
+        }
+    }
 
-        // Empty the current breadcrumb list
-        $('#breadcrumb li').remove();
-
-        // Now build the new breadcrumb list
-        var buildprefix = '';
-        $.each(parts, function(ii, part) {
-            var ipart;
-
-            // Add the bucket (the bucket is always first)
-            if (ii === 0) {
-                var a1 = $('<a>').attr('href', '#').text(part);
-                ipart = $('<li>').append(a1);
-                a1.click(function(e) {
-                    e.preventDefault();
-                    console.log('Breadcrumb click bucket: ' + data.params.Bucket);
-                    s3exp_config = {
-                        Bucket: data.params.Bucket,
-                        Prefix: '',
-                        Delimiter: data.params.Delimiter
-                    };
-                    (s3exp_lister = s3list(s3exp_config, s3draw)).go();
-                });
-                // Else add the folders within the bucket
-            } else {
-                buildprefix += part + '/';
-
-                if (ii == parts.length - 1) {
-                    ipart = $('<li>').addClass('active').text(part);
-                } else {
-                    var a2 = $('<a>').attr('href', '#').append(part);
-                    ipart = $('<li>').append(a2);
-
-                    // Closure needed to enclose the saved S3 prefix
-                    (function() {
-                        var saveprefix = buildprefix;
-                        // console.log('Part: ' + part + ' has buildprefix: ' + saveprefix);
-                        a2.click(function(e) {
-                            e.preventDefault();
-                            console.log('Breadcrumb click object prefix: ' + saveprefix);
-                            s3exp_config = {
-                                Bucket: data.params.Bucket,
-                                Prefix: saveprefix,
-                                Delimiter: data.params.Delimiter
-                            };
-                            (s3exp_lister = s3list(s3exp_config, s3draw)).go();
-                        });
-                    })();
-                }
-            }
-            $('#breadcrumb').append(ipart);
-        });
+    function renderFolder(data, type, full) {
+        return isfolder(data) ? "" : fullpath2pathname(data);
     }
 
     // Remove hash from document URL
