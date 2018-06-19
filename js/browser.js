@@ -268,11 +268,11 @@ $(document).ready(function() {
 
     function s3draw(data, complete) {
         // Add each part of current path (S3 bucket plus folder hierarchy) into the breadcrumbs
-        $.each(data.CommonPrefixes, function(i, prefix) {
+        $.each(data.CommonPrefixes, function(i, folder) {
             $(".file-tree").append(
                 '<li class="file-tree__item">'
                 + '<div class="folder">'
-                + prefix.Prefix.replace('/', '')
+                + '<a href ="' + object2hrefvirt('skynet23', folder.Prefix) +'">' + folder.Prefix.replace('/', '') + '</a>'
                 + '</div>'
                 + '</li>'
             )
@@ -285,12 +285,14 @@ $(document).ready(function() {
         // Add S3 objects to DataTable
         
         //$('#file-list').DataTable().rows.add(data.Contents).draw();
-        $.each(data.Contents, function(i, prefix) {
+        $.each(data.Contents, function(i, file) {
             $('#file-table').append(
                 'tr class="file-list__file">'
-                + '<td> ' + data.Contents[0].Key + '</td>'
-                + '<td> ' + data.Contents[0].LastModified + '</td>'
-                + '<td> ' + data.Contents[0].Size + '</td>'
+                + '<td>'
+                + '<a href ="' + object2hrefvirt('skynet23', file.Key) + '">' + file.Key + '</a>'
+                + '</td>'
+                + '<td> ' + file.LastModified + '</td>'
+                + '<td> ' + file.Size + '</td>'
                 + '</tr>'
             )
         });
